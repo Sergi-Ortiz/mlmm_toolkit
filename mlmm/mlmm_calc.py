@@ -125,7 +125,7 @@ class MLMMCore:
         model_mult: int = 1,
         link_mlmm: List[Tuple[str, str]] | None = None,
         backend: str = "uma",  # "uma" or "aimnet2"
-        uma_model = "uma-s-1p1", # Currently, uma-s-1, uma-s-1p1 and uma-m-1p1 are available
+        uma_model = "uma-s-1p2", # Currently, uma-s-1, uma-s-1p1, uma-s-1p2 and uma-m-1p1 are available
         uma_task_name = 'omol',  # Currently, oc20, omat, omol, odac and omc are available.
         # === hessian / vib =============================================
         vib_run: bool = False,
