@@ -411,6 +411,21 @@ class MLMMCore:
         # still on the CPU, so a batch already on the GPU crashed it there.
         return self._data_list_collater([data], otf_graph=True)
 
+    def _uma_hessian(self, batch_h, pos, n_ml):
+        """UMA's Hessian of the ML region, (n_ml, 3, n_ml, 3), on the ML device.
+
+        The batch is on the CPU (see _ase_to_batch), so autograd returns the Hessian
+        on the CPU too; the rest of the Hessian is assembled on the ML device.
+        """
+        def energy_fn(flat_pos: torch.Tensor):
+            batch_h.pos = flat_pos.view(-1, 3)
+            return self.predictor.predict(batch_h)["energy"].squeeze()
+        self.predictor.model.train()
+        H_flat = torch.autograd.functional.hessian(energy_fn, pos.view(-1))
+        self.predictor.model.eval()
+        H_high = H_flat.view(n_ml, 3, n_ml, 3).to(self.H_dtype).to(self.ml_device)
+        return H_high.detach()
+
     def _prepare_input(self, elem, coord):
         """Prepare AIMNet2 input. Only used when backend='aimnet2'."""
         numbers = torch.as_tensor(
@@ -644,13 +659,7 @@ class MLMMCore:
             F_model_high = res_pred["forces"].detach().cpu().numpy()
 
             if return_hessian:
-                def energy_fn(flat_pos: torch.Tensor):
-                    batch_h.pos = flat_pos.view(-1, 3)
-                    return self.predictor.predict(batch_h)["energy"].squeeze()
-                self.predictor.model.train()
-                H_flat = torch.autograd.functional.hessian(energy_fn, pos.view(-1))
-                H_high = H_flat.view(n_ml, 3, n_ml, 3).to(self.H_dtype).detach()
-                self.predictor.model.eval()
+                H_high = self._uma_hessian(batch_h, pos, n_ml)
             else:
                 H_high = None
             results_h = {}
