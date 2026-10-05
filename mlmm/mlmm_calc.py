@@ -72,6 +72,25 @@ def use_deterministic_torch():
     torch.use_deterministic_algorithms(True, warn_only=True)
 
 
+def uma_inference_settings():
+    """How UMA is loaded for ML/MM, for a pretrained name and a checkpoint file alike.
+
+    fairchem's own "default" settings, with two changes:
+    merge_mole=True: the ML region's composition, charge and spin are fixed for
+    a run, so fairchem mixes the experts once instead of on every call.
+    compile=False: torch.compile crashes on macOS CPU, and the Hessian needs a
+    double backward through the model.
+    Starting from the preset keeps everything else as fairchem means it, e.g.
+    the model building its own graph (older fairchem leaves that unset in a
+    bare InferenceSettings, and UMA then finds no edges).
+    """
+    import dataclasses
+
+    from fairchem.core.units.mlip_unit.api.inference import inference_settings_default
+
+    return dataclasses.replace(inference_settings_default(), merge_mole=True, compile=False)
+
+
 def seed_random_streams(seed: int):
     """Seed Python, NumPy and torch (CPU and CUDA) random numbers.
 
@@ -309,10 +328,15 @@ class MLMMCore:
 
             # uma_model is either a pretrained model name or the path to a local
             # checkpoint file (e.g. a fine-tuned UMA). A name loads exactly as before.
+            settings = uma_inference_settings()
             if os.path.isfile(uma_model):
-                self.predictor = load_predict_unit(uma_model, device=self.device_str)
+                self.predictor = load_predict_unit(
+                    uma_model, inference_settings=settings, device=self.device_str
+                )
             else:
-                self.predictor = pretrained_mlip.get_predict_unit(uma_model, device=self.device_str)
+                self.predictor = pretrained_mlip.get_predict_unit(
+                    uma_model, inference_settings=settings, device=self.device_str
+                )
 
             self.predictor.model.eval()
             for m in self.predictor.model.modules():
@@ -370,12 +394,16 @@ class MLMMCore:
     # the appropriate one at runtime.
     def _ase_to_batch(self, atoms: Atoms):
         """Convert ASE Atoms → UMA AtomicData(Batch). Only used when backend='uma'."""
+        # spin is the spin multiplicity 2S+1. fairchem reads charge and spin from
+        # atoms.info only when they are listed in r_data_keys: without it, every
+        # ML region was charge 0, spin 0 (as upstream found and fixed).
         atoms.info.update({"charge": self.model_charge, "spin": self.model_mult})
         data = self._AtomicData.from_ase(
             atoms,
             max_neigh=self.predictor.model.module.backbone.max_neighbors,
             radius=self.predictor.model.module.backbone.cutoff,
             r_edges=False,
+            r_data_keys=["spin", "charge"],
         ).to(self.ml_device)
         data.dataset = self.uma_task_name
         return self._data_list_collater([data], otf_graph=True).to(self.ml_device)

@@ -41,6 +41,8 @@ Interfaces are available for **ASE** and **Pysisyphus**.
 
 ## 1. Installation Guide
 
+> **This fork (`Sergi-Ortiz/mlmm_toolkit`)** pins its dependencies in `pyproject.toml` to one environment, `mlmm_v1`: Python 3.12, torch 2.13.0 and fairchem 2.22.1.dev19 (`facebookresearch/fairchem@a1605489f`, the fairchem that writes fine-tuned UMA checkpoints), with `t-0hmura/pysisyphus_for_mlmm@4c2373e` and OpenMM 8.3.1. Build it with the `relax` project's recipe ([`finetuning/mlmm_env/`](https://github.com/Sergi-Ortiz/relax/tree/main/finetuning/mlmm_env)), which also pins everything these pull in. UMA is loaded with experts merged and without `torch.compile` (`uma_inference_settings` in `mlmm/mlmm_calc.py`). `aimnet` is the optional extra `aimnet2` (`pip install -e ".[aimnet2]"`; it needs CUDA). The upstream instructions below are kept for reference.
+
 ### Quick install (including `fairchem-core` and `pysisyphus` installation)
 
 For CUDA 12.6:
@@ -89,7 +91,7 @@ module load cuda/12.6
 ```
 pip install git+https://github.com/t-0hmura/mlmm_toolkit.git
 ```
-> In order to resolve its dependencies, `mlmm_toolkit` internally installs `fairchem-core` and `aimnet` from forked repositories.
+> In order to resolve its dependencies, `mlmm_toolkit` internally installs `fairchem-core` and `pysisyphus` from forked repositories; `aimnet` (AIMNet2 backend only) comes with the extra `aimnet2`.
 
 ### 1.4. Authenticate for UMA (Hugging Face)
 
