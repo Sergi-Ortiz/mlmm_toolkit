@@ -13,7 +13,7 @@ from pysisyphus.calculators.Calculator import Calculator
 from pysisyphus.constants import BOHR2ANG, ANG2BOHR, AU2EV
 from pysisyphus import run
 
-from mlmm.mlmm_calc import FAIRCHEM_DEFAULT_SEED, MLMMCore
+from mlmm.mlmm_calc import DETERMINISTIC_BY_DEFAULT, FAIRCHEM_DEFAULT_SEED, MLMMCore
 
 EV2AU = 1 / AU2EV   # eV → Hartree
 
@@ -46,7 +46,7 @@ class mlmm(Calculator):
                  mm_threads: int = 16,
                  freeze_atoms: List[int] | None = None,
 
-                 deterministic: bool = True,
+                 deterministic: bool = DETERMINISTIC_BY_DEFAULT,
                  seed: int = FAIRCHEM_DEFAULT_SEED,
                  **kwargs):
         """
@@ -77,7 +77,7 @@ class mlmm(Calculator):
             freeze_atoms (List[int] | None): 0-based indices of atoms to freeze during MM Hessian calculations.
 
             deterministic (bool): Use torch's deterministic kernels, so that two runs of the same input agree closely (on CUDA, not bit-identical). Process-wide: once on, it stays on for the rest of the process. Default is True.
-            seed (int): Seed of the random numbers used after the UMA model is loaded. Default is fairchem's default seed. In ts_search, the Dimer then reseeds NumPy with its own seed (`dimer: kwargs: seed`, default 0).
+            seed (int): Seed of the random numbers used after the UMA model is loaded. Default is 41 (FAIRCHEM_DEFAULT_SEED, fairchem's default). In ts_search, the Dimer then reseeds NumPy with its own seed (`dimer: kwargs: seed`, default 0).
         """
         self.model_charge_init = model_charge if model_charge is not None else 0
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)

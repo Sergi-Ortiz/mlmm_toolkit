@@ -8,6 +8,8 @@ must be set when ts_search starts, not when its first calculator is built.
 These tests stop the constructor at its `model_pdb` check, which comes just
 after deterministic mode is set, so no input files are needed.
 """
+import os
+
 import pytest
 
 import mlmm.partial_hessian_dimer as partial_hessian_dimer
@@ -26,8 +28,8 @@ def deterministic_calls(monkeypatch):
 def start_ts_search_without_model_pdb(tmp_path, mlmm_kwargs):
     with pytest.raises(ValueError, match="model_pdb"):
         partial_hessian_dimer.PartialHessianDimer(
-            out_dir=str(tmp_path / "dimer"),
-            vib_dir=str(tmp_path / "vib"),
+            out_dir=os.path.join(tmp_path, "dimer"),
+            vib_dir=os.path.join(tmp_path, "vib"),
             mlmm_kwargs=mlmm_kwargs,
         )
 

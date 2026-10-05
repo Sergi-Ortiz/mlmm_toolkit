@@ -38,10 +38,13 @@ from mlmm.hessian_calc import hessian_calc
 # UMA / fairchem and AIMNet2 is imported lazily inside the class to avoid hard dependency
 
 # ---------------------------------------------------------------------
-# Reproducibility: the same input gives the same run
+# Reproducibility: repeated runs of the same input agree closely
 # ---------------------------------------------------------------------
 # fairchem seeds every random stream to this when it builds a predictor
 FAIRCHEM_DEFAULT_SEED = 41
+
+# torch's deterministic kernels are on unless a calculator asks otherwise
+DETERMINISTIC_BY_DEFAULT = True
 
 
 def use_deterministic_torch():
@@ -184,7 +187,7 @@ class MLMMCore:
         mm_threads: int = 16,
         freeze_atoms: List[int] | None = None,
         # === reproducibility =============================================
-        deterministic: bool = True,
+        deterministic: bool = DETERMINISTIC_BY_DEFAULT,
         seed: int = FAIRCHEM_DEFAULT_SEED,
     ):
         """
@@ -214,7 +217,7 @@ class MLMMCore:
             freeze_atoms (List[int] | None): 0-based indices of atoms to freeze during MM Hessian calculations.
 
             deterministic (bool): Use torch's deterministic kernels, so that two runs of the same input agree closely (on CUDA, not bit-identical). Process-wide: once on, it stays on for the rest of the process. Default is True.
-            seed (int): Seed of the random numbers used after the UMA model is loaded. Default is fairchem's default seed. In ts_search, the Dimer then reseeds NumPy with its own seed (`dimer: kwargs: seed`, default 0).
+            seed (int): Seed of the random numbers used after the UMA model is loaded. Default is 41 (FAIRCHEM_DEFAULT_SEED, fairchem's default). In ts_search, the Dimer then reseeds NumPy with its own seed (`dimer: kwargs: seed`, default 0).
         """
         self.backend = backend.lower()
         if self.backend not in ("uma", "aimnet2"):

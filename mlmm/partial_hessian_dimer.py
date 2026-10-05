@@ -45,7 +45,7 @@ from ase.io import read, write
 from ase.data import atomic_masses
 
 from mlmm import mlmm as MLMM
-from mlmm.mlmm_calc import use_deterministic_torch
+from mlmm.mlmm_calc import DETERMINISTIC_BY_DEFAULT, use_deterministic_torch
 from .hessian_calc import (
     calc_freq_from_hessian, write_vib_traj_xyz, _build_tr_basis
 )
@@ -133,7 +133,7 @@ class PartialHessianDimer:
         # Deterministic mode must be on before this class's own CUDA work
         # (torch.cdist in _compute_dynamic_freeze), which can come before the
         # first calculator is built: cuBLAS reads its settings only once.
-        if self.mlmm_kwargs.get("deterministic", True):
+        if self.mlmm_kwargs.get("deterministic", DETERMINISTIC_BY_DEFAULT):
             use_deterministic_torch()
 
         if self.freeze_atoms_static and "freeze_atoms" not in self.mlmm_kwargs:
