@@ -7,7 +7,7 @@ machine-learning/molecular-mechanics model.
 import numpy as np
 from typing import List, Tuple
 from ase.calculators.calculator import Calculator, all_changes
-from mlmm.mlmm_calc import MLMMCore
+from mlmm.mlmm_calc import DETERMINISTIC_BY_DEFAULT, FAIRCHEM_DEFAULT_SEED, MLMMCore
 
 
 class mlmm_ase(Calculator):
@@ -33,7 +33,9 @@ class mlmm_ase(Calculator):
                  mm_cuda_idx: int = 0,
                  mm_threads: int = 16,
                  freeze_atoms: List[int] | None = None,
-                 H_double: bool = False):
+                 H_double: bool = False,
+                 deterministic: bool = DETERMINISTIC_BY_DEFAULT,
+                 seed: int = FAIRCHEM_DEFAULT_SEED):
         """
         ML/MM calculator for ASE
 
@@ -41,6 +43,11 @@ class mlmm_ase(Calculator):
         ----------
         H_double : bool
             Use double precision for Hessian-related tensors.
+        deterministic : bool
+            Use torch's deterministic kernels, so that two runs of the same input agree closely
+            (on CUDA, not bit-identical). Process-wide: once on, it stays on for the rest of the process.
+        seed : int
+            Seed of the random numbers used after the UMA model is loaded. Default is 41 (FAIRCHEM_DEFAULT_SEED, fairchem's default).
         """
         super().__init__()
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)
@@ -66,7 +73,9 @@ class mlmm_ase(Calculator):
                  mm_cuda_idx = mm_cuda_idx,
                  mm_threads = mm_threads,
                  freeze_atoms = self._freeze_atoms,
-                 H_double = H_double)
+                 H_double = H_double,
+                 deterministic = deterministic,
+                 seed = seed)
 
         self.freeze_atoms = freeze_atoms
 
