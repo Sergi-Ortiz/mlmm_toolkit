@@ -13,7 +13,7 @@ from pysisyphus.calculators.Calculator import Calculator
 from pysisyphus.constants import BOHR2ANG, ANG2BOHR, AU2EV
 from pysisyphus import run
 
-from mlmm.mlmm_calc import MLMMCore
+from mlmm.mlmm_calc import FAIRCHEM_DEFAULT_SEED, MLMMCore
 
 EV2AU = 1 / AU2EV   # eV → Hartree
 
@@ -47,7 +47,7 @@ class mlmm(Calculator):
                  freeze_atoms: List[int] | None = None,
 
                  deterministic: bool = True,
-                 seed: int = 41,
+                 seed: int = FAIRCHEM_DEFAULT_SEED,
                  **kwargs):
         """
         ML/MM calculator for Pysisyphus
@@ -77,7 +77,7 @@ class mlmm(Calculator):
             freeze_atoms (List[int] | None): 0-based indices of atoms to freeze during MM Hessian calculations.
 
             deterministic (bool): Use torch's deterministic kernels, so that two runs of the same input give the same result. Default is True.
-            seed (int): Seed of the random numbers used after the ML model is loaded. Default is 41, fairchem's own.
+            seed (int): Seed of the random numbers used after the UMA model is loaded. Default is 41, fairchem's own.
         """
         self.model_charge_init = model_charge if model_charge is not None else 0
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)

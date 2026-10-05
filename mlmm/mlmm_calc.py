@@ -40,6 +40,10 @@ from mlmm.hessian_calc import hessian_calc
 # ---------------------------------------------------------------------
 # Reproducibility: the same input gives the same run
 # ---------------------------------------------------------------------
+# fairchem seeds every random stream to this when it builds a predictor
+FAIRCHEM_DEFAULT_SEED = 41
+
+
 def use_deterministic_torch():
     """Make torch give bit-identical results on every run, CUDA included.
 
@@ -172,7 +176,7 @@ class MLMMCore:
         freeze_atoms: List[int] | None = None,
         # === reproducibility =============================================
         deterministic: bool = True,
-        seed: int = 41,
+        seed: int = FAIRCHEM_DEFAULT_SEED,
     ):
         """
         Args:
@@ -201,7 +205,7 @@ class MLMMCore:
             freeze_atoms (List[int] | None): 0-based indices of atoms to freeze during MM Hessian calculations.
 
             deterministic (bool): Use torch's deterministic kernels, so that two runs of the same input give the same result. Default is True.
-            seed (int): Seed of the random numbers used after the ML model is loaded. Default is 41, fairchem's own.
+            seed (int): Seed of the random numbers used after the UMA model is loaded. Default is 41, fairchem's own.
         """
         self.backend = backend.lower()
         if self.backend not in ("uma", "aimnet2"):
@@ -303,6 +307,10 @@ class MLMMCore:
                 if isinstance(m, nn.Dropout):
                     m.p = 0.0 # set dropout rate to 0.0 for Hessian evaluation
 
+            # fairchem has just reseeded every random stream to 41;
+            # use the caller's seed from here on
+            seed_random_streams(seed)
+
         else:  # AIMNet2
             try:
                 from aimnet.calculators import AIMNet2Calculator
@@ -315,10 +323,6 @@ class MLMMCore:
             model = AIMNet2Calculator("aimnet2")#, device=self.ml_device)
             model.set_lrcoulomb_method("simple")
             self.calc_model_high = model
-
-        # fairchem reseeds every stream to 41 when it builds a predictor;
-        # use the caller's seed from here on
-        seed_random_streams(seed)
 
         self.uma_task_name = uma_task_name
 

@@ -75,15 +75,8 @@ def test_different_seeds_give_different_draws():
     assert all(a != b for a, b in zip(first, second))
 
 
-def test_the_pysisyphus_calculator_passes_both_options_to_the_ml_core(monkeypatch):
+def test_the_pysisyphus_calculator_passes_both_options_to_the_ml_core(recording_core):
     import mlmm.mlmm_pysis as mlmm_pysis
-
-    class RecordingCore:
-        def __init__(self, **kwargs):
-            self.kwargs = kwargs
-            self.freeze_atoms = []
-
-    monkeypatch.setattr(mlmm_pysis, "MLMMCore", RecordingCore)
 
     calc = mlmm_pysis.mlmm(model_charge=0, deterministic=False, seed=5)
 

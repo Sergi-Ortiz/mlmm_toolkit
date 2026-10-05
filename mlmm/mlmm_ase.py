@@ -7,7 +7,7 @@ machine-learning/molecular-mechanics model.
 import numpy as np
 from typing import List, Tuple
 from ase.calculators.calculator import Calculator, all_changes
-from mlmm.mlmm_calc import MLMMCore
+from mlmm.mlmm_calc import FAIRCHEM_DEFAULT_SEED, MLMMCore
 
 
 class mlmm_ase(Calculator):
@@ -35,7 +35,7 @@ class mlmm_ase(Calculator):
                  freeze_atoms: List[int] | None = None,
                  H_double: bool = False,
                  deterministic: bool = True,
-                 seed: int = 41):
+                 seed: int = FAIRCHEM_DEFAULT_SEED):
         """
         ML/MM calculator for ASE
 
@@ -46,7 +46,7 @@ class mlmm_ase(Calculator):
         deterministic : bool
             Use torch's deterministic kernels, so that two runs of the same input give the same result.
         seed : int
-            Seed of the random numbers used after the ML model is loaded. Default is 41, fairchem's own.
+            Seed of the random numbers used after the UMA model is loaded. Default is 41, fairchem's own.
         """
         super().__init__()
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)

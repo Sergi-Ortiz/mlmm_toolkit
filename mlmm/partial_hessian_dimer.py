@@ -435,7 +435,10 @@ class PartialHessianDimer:
     # ================================================================
     def _dimer_segment(self, threshold: str, n_steps: int) -> int:
         calc = MLMM(out_hess_torch=False, **self.mlmm_kwargs)
-        dimer_kwargs = {"seed": 0, **self.dimer_kwargs}
+        # The Dimer's own seed (for a random start mode, unused while mode.dat
+        # exists) is separate from the calculator's `seed`. Default 0, as before.
+        dimer_kwargs = dict(self.dimer_kwargs)
+        dimer_kwargs.setdefault("seed", 0)
         dimer = Dimer(
             calculator=calc, N_raw=self.mode_path, mem=self.mem,
             write_orientations=False, **dimer_kwargs
