@@ -75,7 +75,7 @@ class mlmm(Calculator):
         """
         self.model_charge_init = model_charge if model_charge is not None else 0
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)
-        super().__init__(charge=self.model_charge_init, mult=1, **kwargs)
+        super().__init__(charge=self.model_charge_init, mult=model_mult, **kwargs)
         self.core = MLMMCore(
                  real_pdb = real_pdb,
                  real_parm7 = real_parm7,
@@ -83,6 +83,7 @@ class mlmm(Calculator):
                  model_pdb = model_pdb,
 
                  model_charge = model_charge,
+                 model_mult = model_mult,
                  link_mlmm = link_mlmm,
                  backend = backend,
                  uma_model = uma_model,
