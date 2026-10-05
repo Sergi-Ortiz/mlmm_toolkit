@@ -33,7 +33,9 @@ class mlmm_ase(Calculator):
                  mm_cuda_idx: int = 0,
                  mm_threads: int = 16,
                  freeze_atoms: List[int] | None = None,
-                 H_double: bool = False):
+                 H_double: bool = False,
+                 deterministic: bool = True,
+                 seed: int = 41):
         """
         ML/MM calculator for ASE
 
@@ -41,6 +43,10 @@ class mlmm_ase(Calculator):
         ----------
         H_double : bool
             Use double precision for Hessian-related tensors.
+        deterministic : bool
+            Use torch's deterministic kernels, so that two runs of the same input give the same result.
+        seed : int
+            Seed of the random numbers used after the ML model is loaded. Default is 41, fairchem's own.
         """
         super().__init__()
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)
@@ -66,7 +72,9 @@ class mlmm_ase(Calculator):
                  mm_cuda_idx = mm_cuda_idx,
                  mm_threads = mm_threads,
                  freeze_atoms = self._freeze_atoms,
-                 H_double = H_double)
+                 H_double = H_double,
+                 deterministic = deterministic,
+                 seed = seed)
 
         self.freeze_atoms = freeze_atoms
 

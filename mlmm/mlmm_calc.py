@@ -10,6 +10,7 @@ The default is "uma".
 """
 
 import os
+import random
 import shutil
 import tempfile
 from typing import List, Tuple, Dict
@@ -35,6 +36,37 @@ from rdkit.Chem import rdDetermineBonds
 from mlmm.hessian_calc import hessian_calc
 
 # UMA / fairchem and AIMNet2 is imported lazily inside the class to avoid hard dependency
+
+# ---------------------------------------------------------------------
+# Reproducibility: the same input gives the same run
+# ---------------------------------------------------------------------
+def use_deterministic_torch():
+    """Make torch give bit-identical results on every run, CUDA included.
+
+    On CUDA, UMA sums over edges with atomic adds (index_add_, scatter), whose
+    order changes from run to run. The ~1e-7 noise this leaves in energies,
+    forces and Hessians is enough for GSM and the Dimer to take different
+    paths. This switches torch to its deterministic kernels. It is
+    process-wide, and must run before the first cuBLAS call to take effect.
+    warn_only=True: an op with no deterministic kernel warns instead of failing.
+    """
+    os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.use_deterministic_algorithms(True, warn_only=True)
+
+
+def seed_random_streams(seed: int):
+    """Seed Python, NumPy and torch (CPU and CUDA) random numbers.
+
+    Same streams fairchem seeds (to 41) when it builds a predictor. They feed
+    UMA's random reference vector, torch.lobpcg's start vector and
+    pysisyphus's Lanczos guess.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 # ---------------------------------------------------------------------
 # OpenMM → ASE calculator wrapper
@@ -138,6 +170,9 @@ class MLMMCore:
         mm_cuda_idx: int = 0,
         mm_threads: int = 16,
         freeze_atoms: List[int] | None = None,
+        # === reproducibility =============================================
+        deterministic: bool = True,
+        seed: int = 41,
     ):
         """
         Args:
@@ -164,6 +199,9 @@ class MLMMCore:
             mm_cuda_idx (int): CUDA device index if using GPU.
             mm_threads (int): Number of threads to use for CPU calculations.
             freeze_atoms (List[int] | None): 0-based indices of atoms to freeze during MM Hessian calculations.
+
+            deterministic (bool): Use torch's deterministic kernels, so that two runs of the same input give the same result. Default is True.
+            seed (int): Seed of the random numbers used after the ML model is loaded. Default is 41, fairchem's own.
         """
         self.backend = backend.lower()
         if self.backend not in ("uma", "aimnet2"):
@@ -231,6 +269,9 @@ class MLMMCore:
             mm_device = "cuda" if torch.cuda.is_available() else "cpu"
         self.mm_device = mm_device
 
+        if deterministic:
+            use_deterministic_torch()
+
         # High-level predictor setup
         # ---------------------------------------------------------------------
         # lazy import to avoid mandatory dependency
@@ -274,6 +315,10 @@ class MLMMCore:
             model = AIMNet2Calculator("aimnet2")#, device=self.ml_device)
             model.set_lrcoulomb_method("simple")
             self.calc_model_high = model
+
+        # fairchem reseeds every stream to 41 when it builds a predictor;
+        # use the caller's seed from here on
+        seed_random_streams(seed)
 
         self.uma_task_name = uma_task_name
 

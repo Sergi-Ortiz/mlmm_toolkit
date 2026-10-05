@@ -45,6 +45,9 @@ class mlmm(Calculator):
                  mm_cuda_idx: int = 0,
                  mm_threads: int = 16,
                  freeze_atoms: List[int] | None = None,
+
+                 deterministic: bool = True,
+                 seed: int = 41,
                  **kwargs):
         """
         ML/MM calculator for Pysisyphus
@@ -72,6 +75,9 @@ class mlmm(Calculator):
             mm_cuda_idx (int): CUDA device index if using GPU.
             mm_threads (int): Number of threads to use for CPU calculations. {7950X3D/4.20GHz 16 threads faster than RTX 3090 (2x faster for 8->16, Almos same for 16->32)}
             freeze_atoms (List[int] | None): 0-based indices of atoms to freeze during MM Hessian calculations.
+
+            deterministic (bool): Use torch's deterministic kernels, so that two runs of the same input give the same result. Default is True.
+            seed (int): Seed of the random numbers used after the ML model is loaded. Default is 41, fairchem's own.
         """
         self.model_charge_init = model_charge if model_charge is not None else 0
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)
@@ -99,7 +105,10 @@ class mlmm(Calculator):
                  mm_cuda_idx = mm_cuda_idx,
                  mm_threads = mm_threads,
                  freeze_atoms = self._freeze_atoms,
-                 H_double = H_double)
+                 H_double = H_double,
+
+                 deterministic = deterministic,
+                 seed = seed)
 
         self.out_hess_torch = out_hess_torch
         self.hess_torch_double = H_double

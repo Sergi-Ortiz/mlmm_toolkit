@@ -435,9 +435,10 @@ class PartialHessianDimer:
     # ================================================================
     def _dimer_segment(self, threshold: str, n_steps: int) -> int:
         calc = MLMM(out_hess_torch=False, **self.mlmm_kwargs)
+        dimer_kwargs = {"seed": 0, **self.dimer_kwargs}
         dimer = Dimer(
             calculator=calc, N_raw=self.mode_path, mem=self.mem,
-            write_orientations=False, seed=0, **self.dimer_kwargs
+            write_orientations=False, **dimer_kwargs
         )
         self.geom.freeze_atoms = self.freeze_atoms_static.copy()
         self.geom.set_calculator(dimer)
