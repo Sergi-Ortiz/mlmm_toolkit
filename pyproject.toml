@@ -9,10 +9,12 @@ readme = "README.md"
 authors = [{name = "Takuto Ohmura"}]
 license = {file = "LICENSE"}
 dynamic = ["version"]
-requires-python = ">=3.11, <3.12"
-# Pinned to the env this fork runs in, mlmm_v0: the cluster's (Picard's) own
-# versions, read on 2026-10-05. relax keeps the full list, including what
-# these pull in: finetuning/mlmm_env/mlmm_v0_{requirements,constraints}.txt.
+requires-python = ">=3.11"
+# Pinned to the env this fork runs in, mlmm_v0: the versions of the HPC
+# cluster's own mlmm_v0 env, read on 2026-10-05. fairchem is t-0hmura's fork
+# at the commit that env runs (not Sergi-Ortiz/fairchem). The relax project
+# keeps the full list, including everything these pull in:
+# https://github.com/Sergi-Ortiz/relax/tree/main/finetuning/mlmm_env
 dependencies = [
     "fairchem-core @ git+https://github.com/t-0hmura/fairchem.git@8c1ae4458b3711950f16074881fe89054128c1a7#subdirectory=packages/fairchem-core",
     "pysisyphus @ git+https://github.com/t-0hmura/pysisyphus_for_mlmm.git@4c2373e232e5d54846de2d7c93cab9c4f882f29c",
@@ -34,6 +36,10 @@ dependencies = [
 # Only backend: aimnet2 imports aimnet, and it needs numba-cuda (no macOS build).
 aimnet2 = [
     "aimnet @ git+https://github.com/t-0hmura/aimnetcentral.git@983bc1b91d042af3886e5d770c3c9575e3e3369c",
+]
+# The tests in tests/.
+test = [
+    "pytest==9.0.2",
 ]
 
 [project.scripts]
