@@ -72,6 +72,19 @@ def use_deterministic_torch():
     torch.use_deterministic_algorithms(True, warn_only=True)
 
 
+def uma_inference_settings():
+    """How UMA is loaded for ML/MM, for a pretrained name and a checkpoint file alike.
+
+    merge_mole=True: the ML region's composition, charge and spin are fixed for
+    a run, so fairchem mixes the experts once instead of on every call.
+    compile=False: torch.compile crashes on macOS CPU, and the Hessian needs a
+    double backward through the model.
+    """
+    from fairchem.core.units.mlip_unit.api.inference import InferenceSettings
+
+    return InferenceSettings(merge_mole=True, compile=False)
+
+
 def seed_random_streams(seed: int):
     """Seed Python, NumPy and torch (CPU and CUDA) random numbers.
 
@@ -309,10 +322,15 @@ class MLMMCore:
 
             # uma_model is either a pretrained model name or the path to a local
             # checkpoint file (e.g. a fine-tuned UMA). A name loads exactly as before.
+            settings = uma_inference_settings()
             if os.path.isfile(uma_model):
-                self.predictor = load_predict_unit(uma_model, device=self.device_str)
+                self.predictor = load_predict_unit(
+                    uma_model, inference_settings=settings, device=self.device_str
+                )
             else:
-                self.predictor = pretrained_mlip.get_predict_unit(uma_model, device=self.device_str)
+                self.predictor = pretrained_mlip.get_predict_unit(
+                    uma_model, inference_settings=settings, device=self.device_str
+                )
 
             self.predictor.model.eval()
             for m in self.predictor.model.modules():

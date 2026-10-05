@@ -10,24 +10,26 @@ authors = [{name = "Takuto Ohmura"}]
 license = {file = "LICENSE"}
 dynamic = ["version"]
 requires-python = ">=3.11"
-# Pinned to the env this fork runs in, mlmm_v0: the versions of the HPC
-# cluster's own mlmm_v0 env, read on 2026-10-05. fairchem is t-0hmura's fork
-# at the commit that env runs (not Sergi-Ortiz/fairchem). The relax project
-# keeps the full list, including everything these pull in:
+# Pinned to the env this fork runs in, mlmm_v1. Its ML side is the relax
+# project's fine-tuning env (fairchem 2.22.1.dev19 at facebookresearch@a1605489f,
+# torch 2.13.0), because only that fairchem loads the checkpoints fine-tuning
+# writes; the older t-0hmura/fairchem of the legacy env cannot. Its MM and
+# optimiser side keeps the versions of the legacy env. The relax project keeps
+# the full list, including everything these pull in:
 # https://github.com/Sergi-Ortiz/relax/tree/main/finetuning/mlmm_env
 dependencies = [
-    "fairchem-core @ git+https://github.com/t-0hmura/fairchem.git@8c1ae4458b3711950f16074881fe89054128c1a7#subdirectory=packages/fairchem-core",
+    "fairchem-core @ git+https://github.com/facebookresearch/fairchem.git@a1605489fc8ffe875108721b2c25d08b70375f5b#subdirectory=packages/fairchem-core",
     "pysisyphus @ git+https://github.com/t-0hmura/pysisyphus_for_mlmm.git@4c2373e232e5d54846de2d7c93cab9c4f882f29c",
-    "torch==2.7.0",
-    "numpy==1.26.4",
-    "ase==3.27.0",
+    "torch==2.13.0",
+    "numpy==2.4.6",
+    "ase==3.29.0",
     "openmm==8.3.1",
     "openmm-cuda-12==8.3.1; sys_platform == 'linux'",  # OpenMM's CUDA platform; no macOS build
     "parmed==4.3.1",
     "rdkit==2025.9.6",
     "biopython==1.86",
     "pyyaml==6.0.3",
-    "matplotlib==3.10.8",
+    "matplotlib==3.11.2",
     "plotly==6.6.0",
     "kaleido==1.2.0",
 ]
@@ -39,7 +41,7 @@ aimnet2 = [
 ]
 # The tests in tests/.
 test = [
-    "pytest==9.0.2",
+    "pytest==9.1.1",
 ]
 
 [project.scripts]
