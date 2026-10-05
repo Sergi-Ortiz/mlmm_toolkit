@@ -150,7 +150,7 @@ class MLMMCore:
             model_mult (int): Multiplicity of the model system. Default is 1 (singlet). UMA backend only.
             link_mlmm (List[Tuple[str, str]] | None): List of tuples specifying the link atoms between ML and MM regions. e.g.) [("CB  ARG   294", "CA  ARG   294")]. If None, link atoms are determined automatically based on distance and element type.
             backend (str): ML backend to use. Options are "uma" or "aimnet2".
-            uma_model (str): Model name for uma backend.
+            uma_model (str): Model name for uma backend, or the path to a local checkpoint file.
             uma_task_name (str): See document of fairchem. Default is omol, and it is generally best to leave it unchanged.
 
             vib_run (bool): Whether to run vibrational analysis.
@@ -237,6 +237,7 @@ class MLMMCore:
         if self.backend == "uma":          
             try:
                 from fairchem.core import pretrained_mlip
+                from fairchem.core.units.mlip_unit import load_predict_unit
                 from fairchem.core.datasets.atomic_data import AtomicData
                 from fairchem.core.datasets import data_list_collater
             except ImportError:
@@ -249,7 +250,12 @@ class MLMMCore:
             self._AtomicData = AtomicData
             self._data_list_collater = data_list_collater
 
-            self.predictor = pretrained_mlip.get_predict_unit(uma_model, device=self.device_str)
+            # uma_model is either a pretrained model name or the path to a local
+            # checkpoint file (e.g. a fine-tuned UMA). A name loads exactly as before.
+            if os.path.isfile(uma_model):
+                self.predictor = load_predict_unit(uma_model, device=self.device_str)
+            else:
+                self.predictor = pretrained_mlip.get_predict_unit(uma_model, device=self.device_str)
 
             self.predictor.model.eval()
             for m in self.predictor.model.modules():
