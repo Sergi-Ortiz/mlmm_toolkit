@@ -58,7 +58,7 @@ class mlmm(Calculator):
             model_mult (int): Multiplicity of the model system. Default is 1 (singlet).
             link_mlmm (List[Tuple[str, str]] | None): List of tuples specifying the link atoms between ML and MM regions. e.g.) [("CB  ARG   294", "CA  ARG   294")]. If None, link atoms are determined automatically based on distance and element type.
             backend (str): ML backend to use. Options are "uma" or "aimnet2".
-            uma_model (str): Model name for uma backend.
+            uma_model (str): Model name for uma backend, or the path to a local checkpoint file.
             uma_task_name (str): See document of fairchem. Default is omol, and it is generally best to leave it unchanged.
 
             vib_run (bool): Whether to run vibrational analysis.
