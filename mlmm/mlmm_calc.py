@@ -404,9 +404,12 @@ class MLMMCore:
             radius=self.predictor.model.module.backbone.cutoff,
             r_edges=False,
             r_data_keys=["spin", "charge"],
-        ).to(self.ml_device)
+        )
         data.dataset = self.uma_task_name
-        return self._data_list_collater([data], otf_graph=True).to(self.ml_device)
+        # The batch stays on the CPU: the predictor moves it to its own device.
+        # Its first call mixes UMA's experts (merge_mole) while the model is
+        # still on the CPU, so a batch already on the GPU crashed it there.
+        return self._data_list_collater([data], otf_graph=True)
 
     def _prepare_input(self, elem, coord):
         """Prepare AIMNet2 input. Only used when backend='aimnet2'."""
