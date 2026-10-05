@@ -45,6 +45,7 @@ from ase.io import read, write
 from ase.data import atomic_masses
 
 from mlmm import mlmm as MLMM
+from mlmm.mlmm_calc import use_deterministic_torch
 from .hessian_calc import (
     calc_freq_from_hessian, write_vib_traj_xyz, _build_tr_basis
 )
@@ -128,6 +129,12 @@ class PartialHessianDimer:
         # ---------------------------------------------------------------------
         self.mlmm_kwargs = {} if mlmm_kwargs is None else dict(mlmm_kwargs)
         self.dimer_kwargs = {} if dimer_kwargs is None else dict(dimer_kwargs)
+
+        # Deterministic mode must be on before this class's own CUDA work
+        # (torch.cdist in _compute_dynamic_freeze), which can come before the
+        # first calculator is built: cuBLAS reads its settings only once.
+        if self.mlmm_kwargs.get("deterministic", True):
+            use_deterministic_torch()
 
         if self.freeze_atoms_static and "freeze_atoms" not in self.mlmm_kwargs:
             self.mlmm_kwargs["freeze_atoms"] = self.freeze_atoms_static.copy()
@@ -436,9 +443,11 @@ class PartialHessianDimer:
     def _dimer_segment(self, threshold: str, n_steps: int) -> int:
         calc = MLMM(out_hess_torch=False, **self.mlmm_kwargs)
         # The Dimer's own seed (for a random start mode, unused while mode.dat
-        # exists) is separate from the calculator's `seed`. Default 0, as before.
+        # exists) is separate from the calculator's `seed`, and the Dimer
+        # reseeds NumPy with it after the calculator has. Default 0, as before.
         dimer_kwargs = dict(self.dimer_kwargs)
-        dimer_kwargs.setdefault("seed", 0)
+        if "seed" not in dimer_kwargs:
+            dimer_kwargs["seed"] = 0
         dimer = Dimer(
             calculator=calc, N_raw=self.mode_path, mem=self.mem,
             write_orientations=False, **dimer_kwargs

@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 import torch
 
+import mlmm.mlmm_pysis as mlmm_pysis
 from mlmm.mlmm_calc import seed_random_streams, use_deterministic_torch
 
 
@@ -72,12 +73,14 @@ def test_different_seeds_give_different_draws():
     seed_random_streams(8)
     second = draw_from_every_stream()
 
-    assert all(a != b for a, b in zip(first, second))
+    python_first, numpy_first, torch_first = first
+    python_second, numpy_second, torch_second = second
+    assert python_first != python_second
+    assert numpy_first != numpy_second
+    assert torch_first != torch_second
 
 
 def test_the_pysisyphus_calculator_passes_both_options_to_the_ml_core(recording_core):
-    import mlmm.mlmm_pysis as mlmm_pysis
-
     calc = mlmm_pysis.mlmm(model_charge=0, deterministic=False, seed=5)
 
     assert calc.core.kwargs["deterministic"] is False

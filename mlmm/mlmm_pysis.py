@@ -76,8 +76,8 @@ class mlmm(Calculator):
             mm_threads (int): Number of threads to use for CPU calculations. {7950X3D/4.20GHz 16 threads faster than RTX 3090 (2x faster for 8->16, Almos same for 16->32)}
             freeze_atoms (List[int] | None): 0-based indices of atoms to freeze during MM Hessian calculations.
 
-            deterministic (bool): Use torch's deterministic kernels, so that two runs of the same input give the same result. Default is True.
-            seed (int): Seed of the random numbers used after the UMA model is loaded. Default is 41, fairchem's own.
+            deterministic (bool): Use torch's deterministic kernels, so that two runs of the same input agree closely (on CUDA, not bit-identical). Process-wide: once on, it stays on for the rest of the process. Default is True.
+            seed (int): Seed of the random numbers used after the UMA model is loaded. Default is fairchem's default seed. In ts_search, the Dimer then reseeds NumPy with its own seed (`dimer: kwargs: seed`, default 0).
         """
         self.model_charge_init = model_charge if model_charge is not None else 0
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)

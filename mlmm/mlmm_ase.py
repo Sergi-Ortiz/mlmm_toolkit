@@ -44,9 +44,10 @@ class mlmm_ase(Calculator):
         H_double : bool
             Use double precision for Hessian-related tensors.
         deterministic : bool
-            Use torch's deterministic kernels, so that two runs of the same input give the same result.
+            Use torch's deterministic kernels, so that two runs of the same input agree closely
+            (on CUDA, not bit-identical). Process-wide: once on, it stays on for the rest of the process.
         seed : int
-            Seed of the random numbers used after the UMA model is loaded. Default is 41, fairchem's own.
+            Seed of the random numbers used after the UMA model is loaded. Default is fairchem's default seed.
         """
         super().__init__()
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)
