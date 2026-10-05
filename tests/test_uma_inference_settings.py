@@ -13,3 +13,9 @@ def test_experts_are_merged_once():
 
 def test_model_is_not_compiled():
     assert uma_inference_settings().compile is False
+
+
+def test_the_model_builds_its_own_graph():
+    # The toolkit gives UMA no edges (otf_graph=True): the model must build them.
+    # Older fairchem leaves this unset unless the settings start from its preset.
+    assert uma_inference_settings().external_graph_gen is False
