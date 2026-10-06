@@ -72,10 +72,15 @@ def use_deterministic_torch():
     torch.use_deterministic_algorithms(True, warn_only=True)
 
 
-def uma_inference_settings():
+# how UMA is loaded (the `uma_settings` option): the name of each choice
+UMA_SETTINGS = ("default", "legacy")
+UMA_SETTINGS_BY_DEFAULT = "default"
+
+
+def uma_inference_settings(name: str = UMA_SETTINGS_BY_DEFAULT):
     """How UMA is loaded for ML/MM, for a pretrained name and a checkpoint file alike.
 
-    fairchem's own "default" settings, with two changes:
+    "default" is fairchem's own "default" settings, with two changes:
     merge_mole=True: the ML region's composition, charge and spin are fixed for
     a run, so fairchem mixes the experts once instead of on every call.
     compile=False: torch.compile crashes on macOS CPU, and the Hessian needs a
@@ -83,12 +88,33 @@ def uma_inference_settings():
     Starting from the preset keeps everything else as fairchem means it, e.g.
     the model building its own graph (older fairchem leaves that unset in a
     bare InferenceSettings, and UMA then finds no edges).
+
+    "legacy" is how the upstream toolkit loaded UMA on its older fairchem
+    (0.1.dev1076: get_predict_unit(name, device), no settings given), i.e. that
+    fairchem's InferenceSettings defaults: merge_mole=False,
+    activation_checkpointing=True, tf32=False, compile=False. The experts are
+    mixed on every call, and on CUDA fairchem keeps to its general PyTorch path
+    instead of umas_fast_gpu (which merge_mole=True selects). On the same
+    geometries, at the same charge and spin, it gives the upstream toolkit's
+    energies within 2e-7 Eh (CPU).
     """
     import dataclasses
 
-    from fairchem.core.units.mlip_unit.api.inference import inference_settings_default
+    from fairchem.core.units.mlip_unit.api.inference import InferenceSettings, inference_settings_default
 
-    return dataclasses.replace(inference_settings_default(), merge_mole=True, compile=False)
+    if name == "default":
+        return dataclasses.replace(inference_settings_default(), merge_mole=True, compile=False)
+    if name == "legacy":
+        return InferenceSettings(
+            tf32=False,
+            activation_checkpointing=True,
+            merge_mole=False,
+            compile=False,
+            wigner_cuda=False,
+            external_graph_gen=False,
+            internal_graph_gen_version=2,
+        )
+    raise ValueError(f"uma_settings must be one of {UMA_SETTINGS}, not {name!r}")
 
 
 def seed_random_streams(seed: int):
@@ -208,6 +234,7 @@ class MLMMCore:
         # === reproducibility =============================================
         deterministic: bool = DETERMINISTIC_BY_DEFAULT,
         seed: int = FAIRCHEM_DEFAULT_SEED,
+        uma_settings: str = UMA_SETTINGS_BY_DEFAULT,
     ):
         """
         Args:
@@ -237,10 +264,14 @@ class MLMMCore:
 
             deterministic (bool): Use torch's deterministic kernels, so that two runs of the same input agree closely (on CUDA, not bit-identical). Process-wide: once on, it stays on for the rest of the process. Default is True.
             seed (int): Seed of the random numbers used after the UMA model is loaded. Default is 41 (FAIRCHEM_DEFAULT_SEED, fairchem's default). In ts_search, the Dimer then reseeds NumPy with its own seed (`dimer: kwargs: seed`, default 0).
+            uma_settings (str): How UMA is loaded. "default": fairchem's preset with merge_mole=True. "legacy": the settings the upstream toolkit loaded UMA with on its older fairchem (merge_mole=False, activation_checkpointing=True). UMA backend only. Default is "default".
         """
         self.backend = backend.lower()
         if self.backend not in ("uma", "aimnet2"):
             raise ValueError("backend must be 'uma' or 'aimnet2'")
+        # checked before the slow set-up below, not when UMA is loaded
+        if uma_settings not in UMA_SETTINGS:
+            raise ValueError(f"uma_settings must be one of {UMA_SETTINGS}, not {uma_settings!r}")
 
         # prepare sandbox dir
         # ---------------------------------------------------------------------
@@ -328,7 +359,7 @@ class MLMMCore:
 
             # uma_model is either a pretrained model name or the path to a local
             # checkpoint file (e.g. a fine-tuned UMA). A name loads exactly as before.
-            settings = uma_inference_settings()
+            settings = uma_inference_settings(uma_settings)
             if os.path.isfile(uma_model):
                 self.predictor = load_predict_unit(
                     uma_model, inference_settings=settings, device=self.device_str

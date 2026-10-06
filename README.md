@@ -142,6 +142,8 @@ The ML/MM calculator implemented in ML/MM toolkit offers interfaces for **ASE** 
 > If you need the calculation to be deterministic and your VRAM is ample, set both `ml_device` and `mm_device` to `cuda`, and, in the Pysisyphus interface, set `H_double` to `true`.
 >
 > `deterministic: true` (the default) switches torch to its deterministic kernels, so that two runs of the same input agree closely on CUDA. They are not bit-identical: one UMA operation (`index_reduce_` in `set_MOLE_coefficients`) has no deterministic CUDA kernel. The setting is process-wide: once on, it stays on for the rest of the process. `seed` (default 41, fairchem's default seed) seeds the random numbers used after the UMA model is loaded; in `ts_search`, the Dimer then reseeds NumPy with its own `dimer: kwargs: seed` (default 0).
+>
+> `uma_settings` chooses how UMA is loaded. `default` is fairchem's preset with `merge_mole: true` (the experts are mixed once per run; on CUDA, fairchem then uses its `umas_fast_gpu` kernels). `legacy` is how the upstream toolkit loaded UMA on its older fairchem: `merge_mole: false`, `activation_checkpointing: true`, `tf32: false`. On the same geometries, at the same charge and spin, `legacy` gives the upstream toolkit's energies within 2e-7 Eh (CPU). The upstream toolkit also never passed charge and spin to UMA (it ran at charge 0, spin 0), so reproducing an upstream run takes `model_charge: 0` and `model_mult: 0` as well.
 
 ### Quick‑start examples.
 Fully working scripts are provided in the `examples/` directory so you can try the calculator straight away. Start with the minimal `toy_system` example, then explore realistic enzyme cases in `chorismate_mutase` and `methyltransferase`. Inside `examples/toy_system/`, running `bash run.sh` executes a short calculator test. For a step‑by‑step walkthrough of an entire reaction‑energy profile—from structure preparation to $\Delta G^{\ddagger}$ evaluation—see [examples/tutorial.md](examples/tutorial.md).
@@ -259,6 +261,7 @@ calc:
   mm_threads: 16
   deterministic: true      # torch's deterministic kernels: repeated runs agree closely (not bit-identical on CUDA)
   seed: 41                 # random numbers after the UMA model is loaded
+  uma_settings: default    # how UMA is loaded: default, or legacy (the upstream toolkit's settings)
   mem: 10000 # MB – Pysisyphus scratch memory (If it is large, it is automatically reduced.)
 ```
 
@@ -292,6 +295,7 @@ core = MLMMCore(
     mm_threads     = 16,               # Number of CPU threads for MM force evaluation
     deterministic  = True,             # torch's deterministic kernels: repeated runs agree closely (not bit-identical on CUDA)
     seed           = 41,               # Random numbers after the UMA model is loaded
+    uma_settings   = "default",        # How UMA is loaded: "default", or "legacy" (the upstream toolkit's settings)
 )
 
 from ase.io import read; atoms = read("structure.pdb")

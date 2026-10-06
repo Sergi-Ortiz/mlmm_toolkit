@@ -7,7 +7,7 @@ machine-learning/molecular-mechanics model.
 import numpy as np
 from typing import List, Tuple
 from ase.calculators.calculator import Calculator, all_changes
-from mlmm.mlmm_calc import DETERMINISTIC_BY_DEFAULT, FAIRCHEM_DEFAULT_SEED, MLMMCore
+from mlmm.mlmm_calc import DETERMINISTIC_BY_DEFAULT, FAIRCHEM_DEFAULT_SEED, UMA_SETTINGS_BY_DEFAULT, MLMMCore
 
 
 class mlmm_ase(Calculator):
@@ -35,7 +35,8 @@ class mlmm_ase(Calculator):
                  freeze_atoms: List[int] | None = None,
                  H_double: bool = False,
                  deterministic: bool = DETERMINISTIC_BY_DEFAULT,
-                 seed: int = FAIRCHEM_DEFAULT_SEED):
+                 seed: int = FAIRCHEM_DEFAULT_SEED,
+                 uma_settings: str = UMA_SETTINGS_BY_DEFAULT):
         """
         ML/MM calculator for ASE
 
@@ -48,6 +49,10 @@ class mlmm_ase(Calculator):
             (on CUDA, not bit-identical). Process-wide: once on, it stays on for the rest of the process.
         seed : int
             Seed of the random numbers used after the UMA model is loaded. Default is 41 (FAIRCHEM_DEFAULT_SEED, fairchem's default).
+        uma_settings : str
+            How UMA is loaded. "default": fairchem's preset with merge_mole=True. "legacy": the settings
+            the upstream toolkit loaded UMA with on its older fairchem (merge_mole=False,
+            activation_checkpointing=True). UMA backend only.
         """
         super().__init__()
         self._freeze_atoms = [] if freeze_atoms is None else list(freeze_atoms)
@@ -75,7 +80,8 @@ class mlmm_ase(Calculator):
                  freeze_atoms = self._freeze_atoms,
                  H_double = H_double,
                  deterministic = deterministic,
-                 seed = seed)
+                 seed = seed,
+                 uma_settings = uma_settings)
 
         self.freeze_atoms = freeze_atoms
 
