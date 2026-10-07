@@ -27,6 +27,11 @@ def test_the_model_builds_its_own_graph():
     assert uma_inference_settings().external_graph_gen is False
 
 
+def test_default_keeps_to_the_general_backend():
+    # umas_fast_gpu's Triton kernels cannot be differentiated twice: its Hessians are wrong
+    assert uma_inference_settings().execution_mode == "general"
+
+
 def test_default_is_the_same_when_named():
     assert uma_inference_settings("default") == uma_inference_settings()
 

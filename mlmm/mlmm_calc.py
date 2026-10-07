@@ -85,6 +85,9 @@ def uma_inference_settings(name: str = UMA_SETTINGS_BY_DEFAULT):
     a run, so fairchem mixes the experts once instead of on every call.
     compile=False: torch.compile crashes on macOS CPU, and the Hessian needs a
     double backward through the model.
+    execution_mode="general": with merge_mole=True on CUDA, fairchem would pick
+    its umas_fast_gpu backend, whose Triton kernels cannot be differentiated
+    twice, so the Hessian silently loses terms (TS searches fail; relax #478).
     Starting from the preset keeps everything else as fairchem means it, e.g.
     the model building its own graph (older fairchem leaves that unset in a
     bare InferenceSettings, and UMA then finds no edges).
@@ -103,7 +106,7 @@ def uma_inference_settings(name: str = UMA_SETTINGS_BY_DEFAULT):
     from fairchem.core.units.mlip_unit.api.inference import InferenceSettings, inference_settings_default
 
     if name == "default":
-        return dataclasses.replace(inference_settings_default(), merge_mole=True, compile=False)
+        return dataclasses.replace(inference_settings_default(), merge_mole=True, compile=False, execution_mode="general")
     if name == "legacy":
         return InferenceSettings(
             tf32=False,
